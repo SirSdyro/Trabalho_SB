@@ -2,7 +2,6 @@
 using namespace std;
 
 string constHxd(string a){
-    cout << a << endl;
     transform(a.begin(), a.end(), a.begin(), ::tolower);
     if(a.substr(0,2) == "0x"){
             int value;
@@ -13,6 +12,21 @@ string constHxd(string a){
             return to_string(value);
     }
     return a;
+}
+
+bool isNumeric(const std::string& str) {
+    if (str.empty()) return false;
+
+    size_t start = (str[0] == '-' || str[0] == '+') ? 1 : 0;
+
+    if (start == str.length()) return false;
+
+    for (size_t i = start; i < str.length(); ++i) {
+        if (!std::isdigit(static_cast<unsigned char>(str[i]))) {
+            return false;
+        }
+    }
+    return true;
 }
 
 int main(int argc, char* argv[]){
@@ -38,9 +52,14 @@ int main(int argc, char* argv[]){
 
     string auxLabel = "";
     bool skipFlag = false, ifFlag = false, equFlag = false, dataFlag = false;
-    unordered_map<string,string> symbolTB;
+    unordered_map<string,string> directiveTB;
     queue<string> dataQueue;
-    
+    unordered_map<string,tuple<int,bool,string>> symbolTB;
+    unordered_map<string,pair<string,int>> instructionTB =
+    {{"ADD",make_pair("01",2)},{"SUB",make_pair("02",2)},{"MUL",make_pair("03",2)},{"DIV",make_pair("04",2)},
+    {"JMP",make_pair("05",2)},{"JMPN",make_pair("06",2)},{"JMPP",make_pair("07",2)},{"JMPZ",make_pair("08",2)},
+    {"COPY",make_pair("09",3)},{"LOAD",make_pair("10",2)},{"STORE",make_pair("11",2)},{"INPUT",make_pair("12",2)},
+    {"OUTPUT",make_pair("13",2)},{"STOP",make_pair("14",2)}};
     if (file.is_open()) {
         if(extension == "asm"){
             while (getline(file, line)) {
@@ -54,7 +73,9 @@ int main(int argc, char* argv[]){
                         skipFlag = false;
                         continue;
                     }
-                    if(line[line.length()-1] == ':'){
+                    auto auxLab = line.find(':');
+                    if(auxLab != std::string::npos &&
+                    line.substr(auxLab+1,line.length()-1).find_first_not_of(line.substr(auxLab+1,line.length()-1)[0]) == std::string::npos){
                         auxLabel = line;
                         continue;
                     }
@@ -67,14 +88,14 @@ int main(int argc, char* argv[]){
                     for(int i=0;i<words.size();i++){
                         if(words[i] == "IF"){
                             ifFlag = true;
-                            if(stoi(symbolTB[words[i+1]]) == 0) skipFlag = true;
+                            if(stoi(directiveTB[words[i+1]]) == 0) skipFlag = true;
                         }
                         else if(words[i] == "EQU"){
                             equFlag = true;
-                            symbolTB[words[i-1]] = words[i+1];
+                            directiveTB[words[i-1]] = words[i+1];
                         }
                         else if(words[i] == "CONST"){
-                            symbolTB[words[i+1]] = constHxd(words[i+1]);
+                            directiveTB[words[i+1]] = constHxd(words[i+1]);
                         }
                     }
                     if(ifFlag){
@@ -88,7 +109,7 @@ int main(int argc, char* argv[]){
                     string pre_line = "";
                     for(int i=0;i<words.size();i++){
                         string aux = words[i];
-                        if(symbolTB.count(aux)) aux = symbolTB[aux];
+                        if(directiveTB.count(aux)) aux = directiveTB[aux];
                         if(i == words.size()-1) pre_line += aux;
                         else pre_line += aux+" ";
                     }
@@ -107,6 +128,12 @@ int main(int argc, char* argv[]){
                         aux2.erase(remove(aux2.begin(), aux2.end(), ' '), aux2.end());
                         pre_line = "COPY "+aux1+','+aux2;
                     }
+                    auto lab = pre_line.find(':');
+                    if (lab != std::string::npos){
+                        string aux1 = pre_line.substr(0,lab), aux2 = pre_line.substr(lab,pre_line.length());
+                        aux1.erase(remove(aux1.begin(), aux1.end(), ' '), aux1.end());
+                        pre_line = aux1+aux2;
+                    }
                     if(dataFlag) dataQueue.push(pre_line);
                     else outputFile << pre_line << endl;
                 }
@@ -118,9 +145,79 @@ int main(int argc, char* argv[]){
             }
 
             file.close();
+            outputFile.close();
         }
         else if(extension == "pre"){
-            cout << "ronaldo";
+            int endCount = 0;
+            while (getline(file, line)) {
+                if(!line.empty()){
+                    stringstream ss(line);
+                    string word;
+                    vector<std::string> words;
+                    while (ss >> word) words.push_back(word);
+
+                    for(int i=0;i<words.size();i++){
+                        if(words[i] == "IF"){
+                            ifFlag = true;
+                            if(stoi(directiveTB[words[i+1]]) == 0) skipFlag = true;
+                        }
+                        else if(words[i] == "EQU"){
+                            equFlag = true;
+                            directiveTB[words[i-1]] = words[i+1];
+                        }
+                        else if(words[i] == "CONST"){
+                            directiveTB[words[i+1]] = constHxd(words[i+1]);
+                        }
+                    }
+                    string obj_line = "";
+                    int endAux;
+                    for(int i=0;i<words.size();i++){
+                        string aux = words[i];
+                        auto pos = aux.find(':');
+                        if (pos != std::string::npos){
+                            if(symbolTB.count(aux.substr(0,pos))){
+                                get<0>(symbolTB[aux.substr(0,pos)]) = endCount;
+                                get<1>(symbolTB[aux.substr(0,pos)]) = true;
+                            }
+                            else symbolTB[aux.substr(0,pos)] = make_tuple(endCount,true,"-1");
+                            continue;
+                        }
+                        else if (aux == "CONST"){
+                            continue;
+                        }
+                        else if (aux == "SPACE"){
+                            aux = "00";
+                        }
+                        else if(instructionTB.count(words[i])){
+                            pair<string,int> pair = instructionTB[words[i]];
+                            aux = pair.first;
+                            endAux = pair.second;
+                        }
+                        else if(!isNumeric(words[i]) && symbolTB.count(words[i])){
+                            if(get<1>(symbolTB[words[i]])) aux = to_string(get<0>(symbolTB[words[i]]));
+                            else{
+                                aux = get<2>((symbolTB[words[i]]));
+                                get<2>((symbolTB[words[i]])) = to_string(endCount+1);
+                            }
+                        }
+                        else if(!isNumeric(words[i]) && symbolTB.count(words[i]) == 0){
+                            symbolTB[aux.substr(0,pos)] = make_tuple(-1,false,to_string(endCount+1));
+                            aux = "-1";
+                        }
+                        if(i == words.size()-1) obj_line += aux;
+                        else obj_line += aux+" ";
+                    }
+                    //outputFile << line << endl;
+                    outputFile << "end."+to_string(endCount)+" "+obj_line << endl;
+                    endCount += endAux;
+                    cout << endCount << endl;
+                }
+            }
+            for (const auto& [id, tuple] : symbolTB) {
+            cout << "Key: " << id << " - Values: " << get<0>(tuple) << " " << get<1>(tuple) << " " << get<2>(tuple) << "\n";
+            }
+            file.close();
+            outputFile.close();
         }
 
     } else {
