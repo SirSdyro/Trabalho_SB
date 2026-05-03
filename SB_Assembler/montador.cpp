@@ -29,6 +29,59 @@ bool isNumeric(const std::string& str) {
     return true;
 }
 
+void solvePen(tuple<int,bool,string>& symbol, map<int,string>& objCodeEnd){
+    int value = get<0>(symbol);
+    int end = stoi(get<2>(symbol)),newEnd;
+    bool copyFlag = false;
+    while(true){
+        if(objCodeEnd.count(end-2)){
+            string line = objCodeEnd[end-2];
+            stringstream ss(line);
+            string word;
+            vector<std::string> words;
+            while (ss >> word) words.push_back(word);
+            string newLine = "";
+            for(int i=0;i<words.size();i++){
+                string aux = words[i];
+                if(i == 2){
+                    newEnd = stoi(aux);
+                    aux = to_string(value);
+                    newLine += aux;
+                }
+                else newLine += aux+" ";
+            }
+            objCodeEnd[end-2] = newLine;
+        }
+        else if(objCodeEnd.count(end-1)){
+            string line = objCodeEnd[end-1];
+            stringstream ss(line);
+            string word;
+            vector<std::string> words;
+            while (ss >> word) words.push_back(word);
+            string newLine = "";
+            for(int i=0;i<words.size();i++){
+                string aux = words[i];
+                if(aux == "09") copyFlag = true;
+                if(i == 1){
+                    newEnd = stoi(aux);
+                    aux = to_string(value);
+                    if(copyFlag){
+                        copyFlag = false;
+                        newLine += aux+" ";
+                    }
+                    else newLine += aux;
+                }
+                else newLine += aux+" ";
+            }
+            objCodeEnd[end-1] = newLine;
+
+        }
+        end = newEnd;
+        if(end == -1) break;
+    }
+    return;
+}
+
 int main(int argc, char* argv[]){
     if (argc < 2) { 
         cerr << "Usage: " << argv[0] << " <filename>" << endl;
@@ -48,13 +101,13 @@ int main(int argc, char* argv[]){
     string outputExt;
     if(extension == "asm") outputExt = ".pre";
     else if(extension == "pre") outputExt = ".obj";
-    ofstream outputFile(filename+outputExt);
 
     string auxLabel = "";
     bool skipFlag = false, ifFlag = false, equFlag = false, dataFlag = false;
     unordered_map<string,string> directiveTB;
     queue<string> dataQueue;
     unordered_map<string,tuple<int,bool,string>> symbolTB;
+    map<int,string> objCodeEnd;
     unordered_map<string,pair<string,int>> instructionTB =
     {{"ADD",make_pair("01",2)},{"SUB",make_pair("02",2)},{"MUL",make_pair("03",2)},{"MULT",make_pair("03",2)},
     {"DIV",make_pair("04",2)},{"JMP",make_pair("05",2)},{"JMPN",make_pair("06",2)},{"JMPP",make_pair("07",2)},
@@ -62,6 +115,7 @@ int main(int argc, char* argv[]){
     {"INPUT",make_pair("12",2)},{"OUTPUT",make_pair("13",2)},{"STOP",make_pair("14",2)}};
     if (file.is_open()) {
         if(extension == "asm"){
+            ofstream outputFile(filename+outputExt);
             while (getline(file, line)) {
                 auto pos = line.find(';');
                 if (pos != std::string::npos){
@@ -148,6 +202,7 @@ int main(int argc, char* argv[]){
             outputFile.close();
         }
         else if(extension == "pre"){
+            ofstream outputFile(filename+outputExt);
             ofstream penFile(filename+".pen");
             int endCount = 0;
             while (getline(file, line)) {
@@ -173,6 +228,7 @@ int main(int argc, char* argv[]){
                     string obj_line = "";
                     string pen_line = "";
                     int endAux;
+                    bool constSkip = false;
                     for(int i=0;i<words.size();i++){
                         string aux = words[i];
                         auto pos = aux.find(':');
@@ -180,6 +236,7 @@ int main(int argc, char* argv[]){
                             if(symbolTB.count(aux.substr(0,pos))){
                                 get<0>(symbolTB[aux.substr(0,pos)]) = endCount;
                                 get<1>(symbolTB[aux.substr(0,pos)]) = true;
+                                solvePen(symbolTB[aux.substr(0,pos)],objCodeEnd);
                             }
                             else symbolTB[aux.substr(0,pos)] = make_tuple(endCount,true,"-1");
                             continue;
@@ -212,10 +269,12 @@ int main(int argc, char* argv[]){
                             aux = auxp1+" "+auxp2;
                         }
                         else if (aux == "CONST"){
-                            continue;
+                            constSkip = true;
+                            endAux = 1;
                         }
                         else if (aux == "SPACE"){
                             aux = "00";
+                            endAux = 1;
                         }
                         else if(instructionTB.count(words[i])){
                             pair<string,int> pair = instructionTB[words[i]];
@@ -233,6 +292,10 @@ int main(int argc, char* argv[]){
                             symbolTB[aux] = make_tuple(-1,false,to_string(endCount+1));
                             aux = "-1";
                         }
+                        if(constSkip){
+                            constSkip = false;
+                            continue;
+                        }
                         if(i == words.size()-1){
                             pen_line += aux;
                             obj_line += aux;
@@ -242,18 +305,22 @@ int main(int argc, char* argv[]){
                             obj_line += aux+" ";
                         }
                     }
-                    outputFile << "end."+to_string(endCount)+" "+obj_line << endl;
-                    penFile << "end."+to_string(endCount)+" "+pen_line << endl;
+                    objCodeEnd[endCount] = obj_line;
+                    penFile << "End "+to_string(endCount)+" "+pen_line << endl;
                     endCount += endAux;
-                    cout << endCount << endl;
                 }
             }
-            for (const auto& [id, tuple] : symbolTB) {
-            cout << "Key: " << id << " - Values: " << get<0>(tuple) << " " << get<1>(tuple) << " " << get<2>(tuple) << "\n";
+            for (const auto& [id, line] : objCodeEnd) {
+                outputFile << "End "+to_string(id)+" "+line << endl;
             }
             file.close();
             outputFile.close();
             penFile.close();
+        }
+        else if(extension == "obj"){
+            while (getline(file, line)) {
+                cout << line << endl;
+            }
         }
 
     } else {
