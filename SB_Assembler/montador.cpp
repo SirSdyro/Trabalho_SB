@@ -56,10 +56,10 @@ int main(int argc, char* argv[]){
     queue<string> dataQueue;
     unordered_map<string,tuple<int,bool,string>> symbolTB;
     unordered_map<string,pair<string,int>> instructionTB =
-    {{"ADD",make_pair("01",2)},{"SUB",make_pair("02",2)},{"MUL",make_pair("03",2)},{"DIV",make_pair("04",2)},
-    {"JMP",make_pair("05",2)},{"JMPN",make_pair("06",2)},{"JMPP",make_pair("07",2)},{"JMPZ",make_pair("08",2)},
-    {"COPY",make_pair("09",3)},{"LOAD",make_pair("10",2)},{"STORE",make_pair("11",2)},{"INPUT",make_pair("12",2)},
-    {"OUTPUT",make_pair("13",2)},{"STOP",make_pair("14",2)}};
+    {{"ADD",make_pair("01",2)},{"SUB",make_pair("02",2)},{"MUL",make_pair("03",2)},{"MULT",make_pair("03",2)},
+    {"DIV",make_pair("04",2)},{"JMP",make_pair("05",2)},{"JMPN",make_pair("06",2)},{"JMPP",make_pair("07",2)},
+    {"JMPZ",make_pair("08",2)},{"COPY",make_pair("09",3)},{"LOAD",make_pair("10",2)},{"STORE",make_pair("11",2)},
+    {"INPUT",make_pair("12",2)},{"OUTPUT",make_pair("13",2)},{"STOP",make_pair("14",2)}};
     if (file.is_open()) {
         if(extension == "asm"){
             while (getline(file, line)) {
@@ -148,6 +148,7 @@ int main(int argc, char* argv[]){
             outputFile.close();
         }
         else if(extension == "pre"){
+            ofstream penFile(filename+".pen");
             int endCount = 0;
             while (getline(file, line)) {
                 if(!line.empty()){
@@ -170,6 +171,7 @@ int main(int argc, char* argv[]){
                         }
                     }
                     string obj_line = "";
+                    string pen_line = "";
                     int endAux;
                     for(int i=0;i<words.size();i++){
                         string aux = words[i];
@@ -181,6 +183,33 @@ int main(int argc, char* argv[]){
                             }
                             else symbolTB[aux.substr(0,pos)] = make_tuple(endCount,true,"-1");
                             continue;
+                        }
+                        auto comma = aux.find(',');
+                        if (comma != std::string::npos){
+                            string p1 = aux.substr(0,comma),p2 = aux.substr(comma+1,aux.length()-1),auxp1,auxp2;
+                            if(!isNumeric(p1) && symbolTB.count(p1)){
+                                if(get<1>(symbolTB[p1])) auxp1 = to_string(get<0>(symbolTB[p1]));
+                                else{
+                                    auxp1 = get<2>((symbolTB[p1]));
+                                    get<2>((symbolTB[p1])) = to_string(endCount+1);
+                                }
+                            }
+                            else if(!isNumeric(p1) && symbolTB.count(p1) == 0){
+                                symbolTB[p1] = make_tuple(-1,false,to_string(endCount+1));
+                                auxp1 = "-1";
+                            }
+                            if(!isNumeric(p2) && symbolTB.count(p2)){
+                                if(get<1>(symbolTB[p2])) auxp2 = to_string(get<0>(symbolTB[p2]));
+                                else{
+                                    auxp2 = get<2>((symbolTB[p2]));
+                                    get<2>((symbolTB[p2])) = to_string(endCount+2);
+                                }
+                            }
+                            else if(!isNumeric(p2) && symbolTB.count(p2) == 0){
+                                symbolTB[p2] = make_tuple(-1,false,to_string(endCount+2));
+                                auxp2 = "-1";
+                            }
+                            aux = auxp1+" "+auxp2;
                         }
                         else if (aux == "CONST"){
                             continue;
@@ -201,14 +230,20 @@ int main(int argc, char* argv[]){
                             }
                         }
                         else if(!isNumeric(words[i]) && symbolTB.count(words[i]) == 0){
-                            symbolTB[aux.substr(0,pos)] = make_tuple(-1,false,to_string(endCount+1));
+                            symbolTB[aux] = make_tuple(-1,false,to_string(endCount+1));
                             aux = "-1";
                         }
-                        if(i == words.size()-1) obj_line += aux;
-                        else obj_line += aux+" ";
+                        if(i == words.size()-1){
+                            pen_line += aux;
+                            obj_line += aux;
+                        }
+                        else{
+                            pen_line += aux+" ";
+                            obj_line += aux+" ";
+                        }
                     }
-                    //outputFile << line << endl;
                     outputFile << "end."+to_string(endCount)+" "+obj_line << endl;
+                    penFile << "end."+to_string(endCount)+" "+pen_line << endl;
                     endCount += endAux;
                     cout << endCount << endl;
                 }
@@ -218,6 +253,7 @@ int main(int argc, char* argv[]){
             }
             file.close();
             outputFile.close();
+            penFile.close();
         }
 
     } else {
