@@ -1,18 +1,9 @@
-End 0 12 -1
-End 2 10 1
-End 4 04 -1
-End 6 11 -1
-End 8 03 5
-End 10 11 -1
-End 12 10 3
-End 14 02 11
-End 16 11 15
-End 18 13 17
-End 20 09 7 13
-End 23 10 22
-End 25 07 4
-End 27 14
-End 29 2
-End 30 00
-End 31 00
-End 32 00
+12 -1 10 1 04 -1 11 -1 03 5 11 -1 10 3 02 11 11 15 13 17 09 7 13 10 22 07 4 14 2 00 00 00 00 00 00 00 00 00 00 00 00 
+
+Lista de pendencias regulares
+Simbolo - Valor - Def - Lista
+TMP_DATA - 41 - 1 - 19
+NEW_DATA - 40 - 1 - 21
+DOIS - 29 - 1 - 9
+L1 - 4 - 1 - -1
+OLD_DATA - 30 - 1 - 24
