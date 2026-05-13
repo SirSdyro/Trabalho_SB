@@ -38,7 +38,7 @@ int evaluateExpression(const string& expr, unordered_map<string,tuple<int,bool,s
     string operators = "+-*/";
     int operatorPos = -1;
     char op = ' ';
-    
+
     for (int i = expr.length() - 1; i > 0; --i) {
         if (operators.find(expr[i]) != string::npos) {
             operatorPos = i;
@@ -46,7 +46,7 @@ int evaluateExpression(const string& expr, unordered_map<string,tuple<int,bool,s
             break;
         }
     }
-    
+
     if (operatorPos == -1) {
         if (isNumeric(expr)) {
             return stoi(expr);
@@ -55,13 +55,13 @@ int evaluateExpression(const string& expr, unordered_map<string,tuple<int,bool,s
         }
         return -1;
     }
-    
+
     string operand1 = expr.substr(0, operatorPos);
     string operand2 = expr.substr(operatorPos + 1);
-    
+
     operand1.erase(remove(operand1.begin(), operand1.end(), ' '), operand1.end());
     operand2.erase(remove(operand2.begin(), operand2.end(), ' '), operand2.end());
-    
+
     int val1;
     if (isNumeric(operand1)) {
         val1 = stoi(operand1);
@@ -70,16 +70,16 @@ int evaluateExpression(const string& expr, unordered_map<string,tuple<int,bool,s
     } else {
         return -1;
     }
-    
+
     int val2;
     if (isNumeric(operand2)) {
         val2 = stoi(operand2);
     } else if (symbolTB.count(operand2) && get<1>(symbolTB[operand2])) {
         val2 = get<0>(symbolTB[operand2]);
     } else {
-        return -1; 
+        return -1;
     }
-    
+
     switch(op) {
         case '+': return val1 + val2;
         case '-': return val1 - val2;
@@ -91,7 +91,7 @@ int evaluateExpression(const string& expr, unordered_map<string,tuple<int,bool,s
 
 bool containsArithmeticOp(const string& str) {
     string operators = "+-*/";
-    for (int i = 1; i < str.length(); ++i) { 
+    for (int i = 1; i < (int)str.length(); ++i) {
         if (operators.find(str[i]) != string::npos) {
             return true;
         }
@@ -117,7 +117,7 @@ void solvePen(tuple<int,bool,string>& symbol, map<int,string>& objCodeEnd,
             vector<std::string> words;
             while (ss >> word) words.push_back(word);
             string newLine = "";
-            for(int i=0;i<words.size();i++){
+            for(int i=0;i<(int)words.size();i++){
                 string aux = words[i];
                 if(i == 2){
                     newEnd = stoi(aux);
@@ -135,7 +135,7 @@ void solvePen(tuple<int,bool,string>& symbol, map<int,string>& objCodeEnd,
             vector<std::string> words;
             while (ss >> word) words.push_back(word);
             string newLine = "";
-            for(int i=0;i<words.size();i++){
+            for(int i=0;i<(int)words.size();i++){
                 string aux = words[i];
                 if(aux == "09") copyFlag = true;
                 if(i == 1){
@@ -158,23 +158,23 @@ void solvePen(tuple<int,bool,string>& symbol, map<int,string>& objCodeEnd,
         end = newEnd;
         if(end == -1) break;
     }
-    
+
     for(auto& [address, line] : objCodeEnd){
         if(pendingExpressions.count(address)){
             string expr = pendingExpressions[address];
-            
+
             if(containsLabel(expr, labelName)){
                 stringstream ss(line);
                 string word;
                 vector<string> words;
                 while (ss >> word) words.push_back(word);
-                
+
                 if(words.size() == 2 && words[0] != "09"){
                     if(words[1] == "-1"){
                         int result = evaluateExpression(expr, symbolTB);
                         if(result != -1){
                             words[1] = to_string(result);
-                            
+
                             string newLine = words[0] + " " + words[1];
                             objCodeEnd[address] = newLine;
                         }
@@ -182,12 +182,12 @@ void solvePen(tuple<int,bool,string>& symbol, map<int,string>& objCodeEnd,
                 }
                 else if(words.size() == 3 && words[0] == "09"){
                     bool changed = false;
-                    
+
                     if(words[1] == "-1"){
                         size_t commaPos = expr.find(',');
                         string expr1 = (commaPos != string::npos) ? expr.substr(0, commaPos) : expr;
                         expr1.erase(remove(expr1.begin(), expr1.end(), ' '), expr1.end());
-                        
+
                         if(containsLabel(expr1, labelName)){
                             int result = evaluateExpression(expr1, symbolTB);
                             if(result != -1){
@@ -196,12 +196,12 @@ void solvePen(tuple<int,bool,string>& symbol, map<int,string>& objCodeEnd,
                             }
                         }
                     }
-                    
+
                     if(words[2] == "-1"){
                         size_t commaPos = expr.find(',');
                         string expr2 = (commaPos != string::npos) ? expr.substr(commaPos + 1) : "";
                         expr2.erase(remove(expr2.begin(), expr2.end(), ' '), expr2.end());
-                        
+
                         if(containsLabel(expr2, labelName)){
                             int result = evaluateExpression(expr2, symbolTB);
                             if(result != -1){
@@ -210,7 +210,7 @@ void solvePen(tuple<int,bool,string>& symbol, map<int,string>& objCodeEnd,
                             }
                         }
                     }
-                    
+
                     if(changed){
                         string newLine = words[0] + " " + words[1] + " " + words[2];
                         objCodeEnd[address] = newLine;
@@ -219,12 +219,12 @@ void solvePen(tuple<int,bool,string>& symbol, map<int,string>& objCodeEnd,
             }
         }
     }
-    
+
     return;
 }
 
 int main(int argc, char* argv[]){
-    if (argc < 2) { 
+    if (argc < 2) {
         cerr << "Usage: " << argv[0] << " <filename>" << endl;
         return 1;
     }
@@ -232,7 +232,7 @@ int main(int argc, char* argv[]){
     string filename = aux.substr(0,aux.length()-4);
     string extension = aux.substr(aux.length()-3,aux.length());
 
-    ifstream file(argv[1]); 
+    ifstream file(argv[1]);
     if (!file.is_open()) {
         cerr << "Error: Could not open " << argv[1] << endl;
         return 1;
@@ -280,7 +280,7 @@ int main(int argc, char* argv[]){
                     vector<std::string> words;
                     while (ss >> word) words.push_back(word);
 
-                    for(int i=0;i<words.size();i++){
+                    for(int i=0;i<(int)words.size();i++){
                         if(words[i] == "IF"){
                             ifFlag = true;
                             if(stoi(directiveTB[words[i+1]]) == 0) skipFlag = true;
@@ -302,10 +302,10 @@ int main(int argc, char* argv[]){
                         continue;
                     }
                     string pre_line = "";
-                    for(int i=0;i<words.size();i++){
+                    for(int i=0;i<(int)words.size();i++){
                         string aux = words[i];
                         if(directiveTB.count(aux)) aux = directiveTB[aux];
-                        if(i == words.size()-1) pre_line += aux;
+                        if(i == (int)words.size()-1) pre_line += aux;
                         else pre_line += aux+" ";
                     }
                     if(pre_line == "SECTION DATA"){
@@ -416,7 +416,7 @@ int main(int argc, char* argv[]){
                     vector<std::string> words;
                     while (ss >> word) words.push_back(word);
 
-                    for(int i=0;i<words.size();i++){
+                    for(int i=0;i<(int)words.size();i++){
                         if(words[i] == "IF"){
                             ifFlag = true;
                             if(stoi(directiveTB[words[i+1]]) == 0) skipFlag = true;
@@ -433,7 +433,7 @@ int main(int argc, char* argv[]){
                     string pen_line = "";
                     int endAux;
                     bool constSkip = false;
-                    for(int i=0;i<words.size();i++){
+                    for(int i=0;i<(int)words.size();i++){
                         string aux = words[i];
                         auto pos = aux.find(':');
                         if (pos != std::string::npos){
@@ -449,7 +449,7 @@ int main(int argc, char* argv[]){
                         auto comma = aux.find(',');
                         if (comma != std::string::npos){
                             string p1 = aux.substr(0,comma),p2 = aux.substr(comma+1,aux.length()-1),auxp1,auxp2;
-                            
+
                             if(containsArithmeticOp(p1)){
                                 int result = evaluateExpression(p1, symbolTB);
                                 auxp1 = (result != -1) ? to_string(result) : "-1";
@@ -469,7 +469,7 @@ int main(int argc, char* argv[]){
                             else {
                                 auxp1 = p1;
                             }
-                            
+
                             if(containsArithmeticOp(p2)){
                                 int result = evaluateExpression(p2, symbolTB);
                                 auxp2 = (result != -1) ? to_string(result) : "-1";
@@ -489,7 +489,7 @@ int main(int argc, char* argv[]){
                             else {
                                 auxp2 = p2;
                             }
-                            
+
                             aux = auxp1+" "+auxp2;
                         }
                         else if (aux == "CONST"){
@@ -497,7 +497,7 @@ int main(int argc, char* argv[]){
                             endAux = 1;
                         }
                         else if (aux == "SPACE"){
-							if(i != words.size()-1){
+							if(i != (int)words.size()-1){
 								int times = stoi(words[i+1]), spaceAux = endCount;
 								for(int j=0;j<times;j++){
 									objCodeEnd[spaceAux] = "00";
@@ -548,7 +548,7 @@ int main(int argc, char* argv[]){
 							pen_line = "skip";
 							break;
 						}
-                        if(i == words.size()-1){
+                        if(i == (int)words.size()-1){
                             pen_line += aux;
                             obj_line += aux;
                         }
