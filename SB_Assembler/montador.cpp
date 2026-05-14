@@ -326,7 +326,6 @@ int main(int argc, char* argv[]){
 					else if(pre_line.substr(0,5) == "LOAD " && containsArithmeticOp(pre_line)){
                         size_t spacePos = pre_line.find(' ');
                         string operand = pre_line.substr(spacePos+1);
-                        // Remove espaços do operando (pode conter expressão)
                         operand.erase(remove(operand.begin(), operand.end(), ' '), operand.end());
                         pre_line = "LOAD "+operand;
                     }
