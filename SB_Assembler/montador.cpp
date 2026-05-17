@@ -253,7 +253,7 @@ int main(int argc, char* argv[]){
     {{"ADD",make_pair("01",2)},{"SUB",make_pair("02",2)},{"MUL",make_pair("03",2)},{"MULT",make_pair("03",2)},
     {"DIV",make_pair("04",2)},{"JMP",make_pair("05",2)},{"JMPN",make_pair("06",2)},{"JMPP",make_pair("07",2)},
     {"JMPZ",make_pair("08",2)},{"COPY",make_pair("09",3)},{"LOAD",make_pair("10",2)},{"STORE",make_pair("11",2)},
-    {"INPUT",make_pair("12",2)},{"OUTPUT",make_pair("13",2)},{"STOP",make_pair("14",2)}};
+    {"INPUT",make_pair("12",2)},{"OUTPUT",make_pair("13",2)},{"STOP",make_pair("14",1)}};
     if (file.is_open()) {
         if(extension == "asm"){
             ofstream outputFile(filename+outputExt);
@@ -583,8 +583,110 @@ int main(int argc, char* argv[]){
             penFile.close();
         }
         else if(extension == "obj"){
+            // Carrega todos os tokens do .obj na memoria
+            vector<int> mem;
             while (getline(file, line)) {
-                cout << line << endl;
+                stringstream ss(line);
+                string token;
+                while (ss >> token) {
+                    mem.push_back(stoi(token));
+                }
+            }
+            file.close();
+
+            // Registradores
+            int ACC = 0;  // acumulador
+            int PC  = 0;  // program counter
+
+            while (PC < (int)mem.size()) {
+                int opcode = mem[PC];
+                switch (opcode) {
+                    case 1: { // ADD
+                        int addr = mem[PC+1];
+                        ACC += mem[addr];
+                        PC += 2;
+                        break;
+                    }
+                    case 2: { // SUB
+                        int addr = mem[PC+1];
+                        ACC -= mem[addr];
+                        PC += 2;
+                        break;
+                    }
+                    case 3: { // MUL / MULT
+                        int addr = mem[PC+1];
+                        ACC *= mem[addr];
+                        PC += 2;
+                        break;
+                    }
+                    case 4: { // DIV
+                        int addr = mem[PC+1];
+                        if (mem[addr] == 0) {
+                            cerr << "Erro: divisao por zero no endereco " << PC << endl;
+                            return 1;
+                        }
+                        ACC /= mem[addr];
+                        PC += 2;
+                        break;
+                    }
+                    case 5: { // JMP
+                        PC = mem[PC+1];
+                        break;
+                    }
+                    case 6: { // JMPN
+                        if (ACC < 0) PC = mem[PC+1];
+                        else         PC += 2;
+                        break;
+                    }
+                    case 7: { // JMPP
+                        if (ACC > 0) PC = mem[PC+1];
+                        else         PC += 2;
+                        break;
+                    }
+                    case 8: { // JMPZ
+                        if (ACC == 0) PC = mem[PC+1];
+                        else          PC += 2;
+                        break;
+                    }
+                    case 9: { // COPY
+                        int src  = mem[PC+1];
+                        int dest = mem[PC+2];
+                        mem[dest] = mem[src];
+                        PC += 3;
+                        break;
+                    }
+                    case 10: { // LOAD
+                        int addr = mem[PC+1];
+                        ACC = mem[addr];
+                        PC += 2;
+                        break;
+                    }
+                    case 11: { // STORE
+                        int addr = mem[PC+1];
+                        mem[addr] = ACC;
+                        PC += 2;
+                        break;
+                    }
+                    case 12: { // INPUT
+                        int addr = mem[PC+1];
+                        cin >> mem[addr];
+                        PC += 2;
+                        break;
+                    }
+                    case 13: { // OUTPUT
+                        int addr = mem[PC+1];
+                        cout << mem[addr] << endl;
+                        PC += 2;
+                        break;
+                    }
+                    case 14: { // STOP
+                        return 0;
+                    }
+                    default: {
+                        cerr << "Erro: opcode desconhecido " << opcode << " no endereco " << PC << endl;
+                        return 1;
+                    }
+                }
             }
         }
 
