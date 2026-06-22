@@ -28,8 +28,9 @@ section .data
 
 section .bss
     username resb 32
-    len_username resd 4
-    precision resb 1
+    len_username resb 32
+    precision resb 32
+    teste resb 32
 
 section .text
     global _start                      ; Ponto de entrada exigido pelo ld
@@ -58,21 +59,21 @@ _start:
     push len_precisionMsg
     push precisionMsg
     call cout
-    push len_precision
+    push bit32
     push precision
     call cin_number
     push precision
     call ascii2num
-    push len_precision
-    push precision
-    call cout
 
-    add [precision], 1
-    mov eax, 4
-    mov ebx, 1
-    mov ecx, precision
-    mov edx, 1
-    int 0x80
+    shl dword [precision], 1
+
+    push teste
+    push [precision]
+    call num2ascii
+
+    push bit32
+    push teste
+    call cout
 
     ; 2. Sair do programa (sys_exit)
     mov eax, 1                         ; Número da syscall sys_exit
@@ -149,6 +150,37 @@ ascii2num:
     add eax, ecx            ; Add the newly parsed digit value into EAX
     jmp .convert_loop       ; Loop back for next character
 .done:
-    mov [ebp+8],eax
+    mov esi, [ebp+8]
+    mov [esi], eax
     pop ebp
     ret 4
+
+num2ascii:
+    ; param: (numero, buffer)
+    ; retorna: buffer preenchido
+
+    push ebp
+    mov ebp, esp
+
+    mov eax, [ebp+8]     ; numero
+    mov edi, [ebp+12]    ; buffer
+
+    add edi, 10
+    mov byte [edi], 0
+
+.loop:
+    dec edi
+
+    xor edx, edx
+    mov ebx, 10
+    div ebx
+
+    add dl, '0'
+    mov [edi], dl
+
+    cmp eax, 0
+    jne .loop
+
+    mov eax, edi         ; retorna ponteiro do início da string
+    pop ebp
+    ret 8
