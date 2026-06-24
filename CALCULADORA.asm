@@ -84,7 +84,7 @@ _start:
 cout:
     ; param : (mensagem, tamanho da mensagem)
     push ebp
-    mov ebp, esp
+    mov ebp, esp ; mover
     mov eax, 4
     mov ebx, 1
     mov ecx, [ebp+8]
