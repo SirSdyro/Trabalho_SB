@@ -210,10 +210,38 @@ ADD16:
 SUB16:
     jmp MENU
 MUL16:
+    call mul16            ; AX <- resultado
+
+    movsx eax, ax         ; estende o resultado de 16 para 32 bits
+
+    push result_buffer    ; buffer onde será escrita a string
+    push eax              ; número a converter
+    call num2ascii        ; EAX=ponteiro da string, ECX=tamanho
+
+    push ecx              ; tamanho
+    push eax              ; endereço da string
+    call cout
+    push enter_aux
+    call cin_string
+
     jmp MENU
 DIV16:
     jmp MENU
 EXP16:
+    call exp16          ; AX <- resultado
+
+    movsx eax, ax         ; estende o resultado de 16 para 32 bits
+
+    push result_buffer    ; buffer onde será escrita a string
+    push eax              ; número a converter
+    call num2ascii        ; EAX=ponteiro da string, ECX=tamanho
+
+    push ecx              ; tamanho
+    push eax              ; endereço da string
+    call cout
+    push enter_aux
+    call cin_string
+
     jmp MENU
 MOD16:
     jmp MENU
@@ -301,6 +329,57 @@ add16:
 
     add ax,[ebp-8]
 
+    mov esp,ebp
+    pop ebp
+    ret
+
+;---------------------------------------------------------
+; sub16
+;
+; Retorno:
+; AX = resultado
+;---------------------------------------------------------
+;sub16:
+
+;---------------------------------------------------------
+; mul16
+;
+; Retorno:
+; AX = resultado
+;---------------------------------------------------------
+
+mul16:
+    push ebp
+    mov ebp,esp
+
+    sub esp,8
+
+    ; primeiro número
+
+    push len_msgNum1
+    push msgNum1
+    call cout
+
+    lea eax,[ebp-4]
+    push eax
+    call cin_number16
+
+    ; segundo número
+
+    push len_msgNum2
+    push msgNum2
+    call cout
+
+    lea eax,[ebp-8]
+    push eax
+    call cin_number16
+
+    ; multiplicacao
+
+    mov ax,[ebp-4]
+
+    imul ax,[ebp-8]
+
     jo .overflow
 
     mov esp,ebp
@@ -313,7 +392,94 @@ add16:
     push msgOverflow
     call cout
 
-    jmp MENU
+    jmp SAIR
+
+;---------------------------------------------------------
+; div16
+;
+; Retorno:
+; AX = resultado
+;---------------------------------------------------------
+;div16:
+
+;---------------------------------------------------------
+; exp16
+;
+; Retorno:
+; AX = resultado
+;---------------------------------------------------------
+exp16:
+
+    push ebp
+    mov ebp,esp
+
+    sub esp,8
+
+    ; base
+
+    push len_msgNum1
+    push msgNum1
+    call cout
+
+    lea eax,[ebp-4]
+    push eax
+    call cin_number16
+
+    ; expoente
+
+    push len_msgNum2
+    push msgNum2
+    call cout
+
+    lea eax,[ebp-8]
+    push eax
+    call cin_number16
+
+    mov bx,[ebp-4]
+    movsx edx,word [ebp-8]
+    mov ax,1
+
+    cmp edx,0
+    je .fim
+
+.loop:
+
+    cmp edx,0
+    je .fim
+
+    imul ax,bx
+    jo .overflow
+
+    dec edx
+    jmp .loop
+
+.fim:
+
+    mov esp,ebp
+    pop ebp
+    ret
+
+.overflow:
+
+    push len_msgOverflow
+    push msgOverflow
+    call cout
+    jmp SAIR
+
+.erro:
+
+    push len_msgFaixa
+    push msgFaixa
+    call cout
+    jmp SAIR
+
+;---------------------------------------------------------
+; mod16
+;
+; Retorno:
+; AX = resultado
+;---------------------------------------------------------
+;mod16:
 
 cout:
 
