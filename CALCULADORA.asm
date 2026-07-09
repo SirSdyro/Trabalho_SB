@@ -4,183 +4,584 @@
 ; ./test
 
 section .data
-    welcome db 'Bem-vindo. Digite seu nome:', 0xa   ; String com quebra de linha
-    len_welcome equ $ - welcome                    ; Tamanho da string
 
-    hello1 db 'Hola, '
-    len_hello1 equ $ - hello1
+    welcome db 'Bem-vindo. Digite seu nome:',0xa
+    len_welcome equ $-welcome
 
-    hello2 db ', bem-vindo ao programa de CALC IA-32', 0xa
-    len_hello2 equ $ - hello2
+    hello1 db 'Ola, '
+    len_hello1 equ $-hello1
 
-    precisionMsg db 'Vai trabalhar com 16 ou 32 bits (digite 0 para 16, e 1 para 32):', 0xa
-    len_precisionMsg equ $ - precisionMsg
+    hello2 db ', bem-vindo ao programa CALC IA-32',0xa
+    len_hello2 equ $-hello2
 
-    ;hello db 'Hola, <nome do usuario>, bem-vindo ao programa de CALC IA-32', 0xa
-    ;len_hello equ $ - hello
+    precisionMsg db 'Precisao (0=16 bits / 1=32 bits): ',0xa
+    len_precisionMsg equ $-precisionMsg
 
-    ;hello db 'Hola, <nome do usuario>, bem-vindo ao programa de CALC IA-32', 0xa
-    ;len_hello equ $ - hello
-    
-    len_precision equ 1
-    bit16 equ 16
-    bit32 equ 32
+    menu0 db 0xa,'ESCOLHA UMA OPCAO',0xa
+    len_menu0 equ $-menu0
+
+    menu1 db '1 - Soma',0xa
+    len_menu1 equ $-menu1
+
+    menu2 db '2 - Subtracao',0xa
+    len_menu2 equ $-menu2
+
+    menu3 db '3 - Multiplicacao',0xa
+    len_menu3 equ $-menu3
+
+    menu4 db '4 - Divisao',0xa
+    len_menu4 equ $-menu4
+
+    menu5 db '5 - Exponenciacao',0xa
+    len_menu5 equ $-menu5
+
+    menu6 db '6 - Mod',0xa
+    len_menu6 equ $-menu6
+
+    menu7 db '7 - Sair',0xa
+    len_menu7 equ $-menu7
+
+    msgNum1 db 'Primeiro numero: '
+    len_msgNum1 equ $-msgNum1
+
+    msgNum2 db 'Segundo numero: '
+    len_msgNum2 equ $-msgNum2
+
+    msgRes db 'Resultado: '
+    len_msgRes equ $-msgRes
+
+    msgOverflow db 'ERRO: Overflow!',0xa
+    len_msgOverflow equ $-msgOverflow
+
+    msgFaixa db 'ERRO: Numero fora da faixa.',0xa
+    len_msgFaixa equ $-msgFaixa
 
 section .bss
-    username resb 32
-    len_username resb 32
-    precision resb 32
-    teste resb 32
+
+    username        resb 32
+    len_username    resd 1
+
+    precision       resd 1
+    menu_op         resd 1
+
+    input_buffer    resb 16
+
+    result_buffer   resb 16
+
+    enter_aux   resb 2
 
 section .text
-    global _start                      ; Ponto de entrada exigido pelo ld
+    global _start
 
 _start:
-    ; 1. Escrever no terminal (sys_write)
-    ;mov eax, 4                         ; Número da syscall sys_write
-    ;mov ebx, 1                         ; File descriptor 1 (stdout)
-    ;mov ecx, welcome                       ; Ponteiro para a mensagem
-    ;mov edx, len_welcome                       ; Tamanho da mensagem
-    ;int 0x80                           ; Chama o kernel do Linux
+
     push len_welcome
     push welcome
     call cout
+
     push username
     call cin_string
+
     push len_hello1
     push hello1
     call cout
+
     push [len_username]
     push username
     call cout
+
     push len_hello2
     push hello2
     call cout
+
     push len_precisionMsg
     push precisionMsg
     call cout
-    push bit32
+
     push precision
-    call cin_number
-    push precision
-    call ascii2num
+    call cin_number16
 
-    shl dword [precision], 1
+MENU:
 
-    push teste
-    push [precision]
-    call num2ascii
-
-    push bit32
-    push teste
+    push len_menu0
+    push menu0
     call cout
 
+    push len_menu1
+    push menu1
+    call cout
+
+    push len_menu2
+    push menu2
+    call cout
+
+    push len_menu3
+    push menu3
+    call cout
+
+    push len_menu4
+    push menu4
+    call cout
+
+    push len_menu5
+    push menu5
+    call cout
+
+    push len_menu6
+    push menu6
+    call cout
+
+    push len_menu7
+    push menu7
+    call cout
+
+    push menu_op
+    call cin_number16
+
+    cmp dword [precision],1
+    je MENU32
+
+MENU16:
+
+    cmp dword [menu_op],1
+    je ADD16
+
+    cmp dword [menu_op],2
+    je SUB16
+
+    cmp dword [menu_op],3
+    je MUL16
+
+    cmp dword [menu_op],4
+    je DIV16
+
+    cmp dword [menu_op],5
+    je EXP16
+
+    cmp dword [menu_op],6
+    je MOD16
+
+    cmp dword [menu_op],7
+    je SAIR
+
+    jmp MENU
+
+MENU32:
+
+    cmp dword [menu_op],1
+    je ADD32
+
+    cmp dword [menu_op],2
+    je SUB32
+
+    cmp dword [menu_op],3
+    je MUL32
+
+    cmp dword [menu_op],4
+    je DIV32
+
+    cmp dword [menu_op],5
+    je EXP32
+
+    cmp dword [menu_op],6
+    je MOD32
+
+    cmp dword [menu_op],7
+    je SAIR
+
+    jmp MENU
+
+ADD16:
+    call add16            ; AX <- resultado
+
+    movsx eax, ax         ; estende o resultado de 16 para 32 bits
+
+    push result_buffer    ; buffer onde será escrita a string
+    push eax              ; número a converter
+    call num2ascii        ; EAX=ponteiro da string, ECX=tamanho
+
+    push ecx              ; tamanho
+    push eax              ; endereço da string
+    call cout
+    push enter_aux
+    call cin_string
+
+    jmp MENU
+SUB16:
+    jmp MENU
+MUL16:
+    jmp MENU
+DIV16:
+    jmp MENU
+EXP16:
+    jmp MENU
+MOD16:
+    jmp MENU
+
+;///32 bits///
+BITS_32:
+    cmp dword [menu_op], 1
+    je ADD32
+    cmp dword [menu_op], 2
+    je SUB32
+    cmp dword [menu_op], 3
+    je MUL32
+    cmp dword [menu_op], 4
+    je DIV32
+    cmp dword [menu_op], 5
+    je EXP32
+    cmp dword [menu_op], 6
+    je MOD32
+    cmp dword [menu_op], 7
+    je SAIR
+
+ADD32:
+    jmp MENU
+SUB32:
+    jmp MENU
+MUL32:
+    jmp MENU
+DIV32:
+    jmp MENU
+EXP32:
+    jmp MENU
+MOD32:
+    jmp MENU
+
+    push len_welcome
+    push welcome
+    call cout
+
+SAIR:
     ; 2. Sair do programa (sys_exit)
     mov eax, 1                         ; Número da syscall sys_exit
     mov ebx, 0                         ; Código de status 0 (sucesso)
     int 0x80                           ; Chama o kernel do Linux
 
 ;||||||||||FUNCOES||||||||||
-cout:
-    ; param : (mensagem, tamanho da mensagem)
+
+;>>>>>>FUNCOES 16 BITS<<<<<<
+;---------------------------------------------------------
+; add16
+;
+; Retorno:
+; AX = resultado
+;---------------------------------------------------------
+
+add16:
+
     push ebp
-    mov ebp, esp ; mover
-    mov eax, 4
-    mov ebx, 1
-    mov ecx, [ebp+8]
-    mov edx, [ebp+12]
+    mov ebp,esp
+
+    sub esp,8
+
+    ; primeiro número
+
+    push len_msgNum1
+    push msgNum1
+    call cout
+
+    lea eax,[ebp-4]
+    push eax
+    call cin_number16
+
+    ; segundo número
+
+    push len_msgNum2
+    push msgNum2
+    call cout
+
+    lea eax,[ebp-8]
+    push eax
+    call cin_number16
+
+    ; soma
+
+    mov ax,[ebp-4]
+
+    add ax,[ebp-8]
+
+    jo .overflow
+
+    mov esp,ebp
+    pop ebp
+    ret
+
+.overflow:
+
+    push len_msgOverflow
+    push msgOverflow
+    call cout
+
+    jmp MENU
+
+cout:
+
+    push ebp
+    mov ebp,esp
+
+    mov eax,4
+    mov ebx,1
+    mov ecx,[ebp+8]
+    mov edx,[ebp+12]
+
     int 0x80
+
     pop ebp
     ret 8
 
 cin_string:
-    ; param : (variavel)
+
     push ebp
-    mov ebp, esp
-    mov eax, 3
-    mov ebx, 0
-    mov ecx, [ebp+8]
-    mov edx, 32
+    mov ebp,esp
+
+    mov eax,3
+    mov ebx,0
+    mov ecx,[ebp+8]
+    mov edx,32
+
     int 0x80
-    pop ebp
-    sub eax, 1
-    mov [len_username], eax
-    ret 4
 
-cin_number:
-    ; param : (variavel, tamanho maximo da variavel)
-    push ebp
-    mov ebp, esp
-    mov eax, 3
-    mov ebx, 0
-    mov ecx, [ebp+8]
-    mov edx, [ebp+12]
-    int 0x80
-    pop ebp
-    ret 8
+    dec eax
+    mov [len_username],eax
 
-ascii2num:
-    ; param : (variavel)
-    push ebp
-    mov ebp, esp
-    mov esi, [ebp+8]         ; Move the address of our text buffer into ESI
-    xor eax, eax            ; Clear EAX. This register holds our final total
-    xor ecx, ecx            ; Clear ECX. This holds the current digit byte
-.convert_loop:
-    mov cl, [esi]           ; Load the next character byte from memory into CL
-    inc esi                 ; Move buffer pointer forward to the next byte
-
-    cmp cl, 0xa             ; Check if character is a Newline (\n)
-    je .done                ; If newline, user finished typing. Exit loop
-    cmp cl, 0               ; Check if character is a Null terminator
-    je .done                ; If null, exit loop
-
-    ; Basic safety check (ensure the character is a digit between '0' and '9')
-    cmp cl, '0'
-    jl .convert_loop        ; Skip if it's less than ASCII '0'
-    cmp cl, '9'
-    jg .convert_loop        ; Skip if it's greater than ASCII '9'
-
-    ; Convert ASCII character to raw digit value
-    sub cl, '0'             ; Subtract 48 (0x30) to change '5' (0x35) to 5
-
-    ; Shift total to the left by multiplying previous value by 10
-    ; Formula: Total = (Total * 10) + Current Digit
-    imul eax, eax, 10       ; Multiply current total in EAX by 10
-    add eax, ecx            ; Add the newly parsed digit value into EAX
-    jmp .convert_loop       ; Loop back for next character
-.done:
-    mov esi, [ebp+8]
-    mov [esi], eax
     pop ebp
     ret 4
 
-num2ascii:
-    ; param: (numero, buffer)
-    ; retorna: buffer preenchido
+;------------------------------------------------------------
+; cin_number16
+;
+; Entrada:
+;     push endereco_da_variavel
+;
+; Saída:
+;     [variavel] = inteiro
+;     EAX = inteiro
+;
+;------------------------------------------------------------
+
+cin_number16:
 
     push ebp
-    mov ebp, esp
+    mov ebp,esp
 
-    mov eax, [ebp+8]     ; numero
-    mov edi, [ebp+12]    ; buffer
+    ; leitura
 
-    add edi, 10
-    mov byte [edi], 0
+    mov eax,3
+    mov ebx,0
+    mov ecx,input_buffer
+    mov edx,16
+    int 0x80
 
-.loop:
-    dec edi
+    ; converte
 
-    xor edx, edx
-    mov ebx, 10
-    div ebx
+    push input_buffer
+    call ascii_to_int
 
-    add dl, '0'
-    mov [edi], dl
+    ; verifica faixa
 
-    cmp eax, 0
+    cmp eax,32767
+    jg .erro
+
+    cmp eax,-32768
+    jl .erro
+
+    mov edi,[ebp+8]
+    mov [edi],eax
+
+    pop ebp
+    ret 4
+
+.erro:
+
+    push len_msgFaixa
+    push msgFaixa
+    call cout
+
+    jmp SAIR
+
+;------------------------------------------------------------
+; cin_number32
+;
+; Entrada:
+;      push endereco
+;
+; Saída:
+;      [endereco] = inteiro
+;
+;------------------------------------------------------------
+
+cin_number32:
+
+    push ebp
+    mov ebp,esp
+
+    mov eax,3
+    mov ebx,0
+    mov ecx,input_buffer
+    mov edx,16
+    int 0x80
+
+    push input_buffer
+    call ascii_to_int
+
+    mov edi,[ebp+8]
+    mov [edi],eax
+
+    pop ebp
+    ret 4
+
+;------------------------------------------------------------
+; ascii_to_int
+;
+; Entrada:
+;      push buffer
+;
+; Saída:
+;      EAX = inteiro
+;
+;------------------------------------------------------------
+
+ascii_to_int:
+
+    push ebp
+    mov ebp,esp
+
+    mov esi,[ebp+8]
+
+    xor eax,eax
+    xor ebx,ebx
+
+    ; verifica sinal
+
+    mov cl,[esi]
+
+    cmp cl,'-'
     jne .loop
 
-    mov eax, edi         ; retorna ponteiro do início da string
+    mov bl,1
+    inc esi
+
+.loop:
+
+    xor ecx,ecx
+
+    mov cl,[esi]
+    inc esi
+
+    cmp cl,0xa
+    je .fim
+
+    cmp cl,13
+    je .fim
+
+    cmp cl,0
+    je .fim
+
+    cmp cl,'0'
+    jl .erro
+
+    cmp cl,'9'
+    jg .erro
+
+    sub cl,'0'
+
+    imul eax,eax,0xa
+    jo .erro
+
+    add eax,ecx
+    jo .erro
+
+    jmp .loop
+
+.fim:
+
+    cmp bl,0
+    je .ok
+
+    neg eax
+
+.ok:
+
+    pop ebp
+    ret 4
+
+.erro:
+
+    push len_msgFaixa
+    push msgFaixa
+    call cout
+
+    jmp SAIR
+
+;------------------------------------------------------------
+; num2ascii
+;
+; Entrada
+;
+;     push buffer
+;     push numero
+;
+; Retorno
+;
+;     EAX = ponteiro
+;     EDX = comprimento
+;
+;------------------------------------------------------------
+
+num2ascii:
+
+    push ebp
+    mov ebp,esp
+
+    mov eax,[ebp+8]
+    mov edi,[ebp+12]
+
+    add edi,15
+    mov byte [edi],0
+
+    xor esi,esi
+
+    cmp eax,0
+    jge .convert
+
+    neg eax
+    mov esi,1
+
+.convert:
+
+.loop:
+
+    dec edi
+
+    xor edx,edx
+
+    mov ebx,0xa
+
+    div ebx
+
+    add dl,'0'
+
+    mov [edi],dl
+
+    test eax,eax
+    jne .loop
+
+    cmp esi,0
+    je .finish
+
+    dec edi
+    mov byte [edi],'-'
+
+.finish:
+
+    mov eax,edi
+
+    mov edx,[ebp+12]
+    add edx,15
+    sub edx,eax
+
+    dec edx
+
     pop ebp
     ret 8
