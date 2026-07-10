@@ -47,9 +47,6 @@ section .data
     msgNum2 db 'Segundo numero: '
     len_msgNum2 equ $-msgNum2
 
-    msgRes db 'Resultado: '
-    len_msgRes equ $-msgRes
-
     msgOverflow db 'ERRO: Overflow!',0xa
     len_msgOverflow equ $-msgOverflow
 
@@ -324,7 +321,7 @@ SAIR:
 
 ;||||||||||FUNCOES||||||||||
 
-;>>>>>>FUNCOES 16 BITS<<<<<<
+;>>>>>>>>>>>>FUNCOES 16 BITS<<<<<<<<<<<<
 ;---------------------------------------------------------
 ; add16
 ;
@@ -517,7 +514,7 @@ exp16:
 ;---------------------------------------------------------
 ;mod16:
 
-;>>>>>>FUNCOES 32 BITS<<<<<<
+;>>>>>>>>>>>>FUNCOES 32 BITS<<<<<<<<<<<<
 ;---------------------------------------------------------
 ; add32
 ;
@@ -566,7 +563,7 @@ add32:
 ; sub32
 ;
 ; Retorno:
-; AX = resultado
+; EAX = resultado
 ;---------------------------------------------------------
 ;sub32:
 
