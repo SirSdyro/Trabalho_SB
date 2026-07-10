@@ -264,14 +264,50 @@ BITS_32:
     je SAIR
 
 ADD32:
+    call add32            ; EAX <- resultado
+
+    push result_buffer    ; buffer onde será escrita a string
+    push eax              ; número a converter
+    call num2ascii        ; EAX=ponteiro da string, ECX=tamanho
+
+    push ecx              ; tamanho
+    push eax              ; endereço da string
+    call cout
+    push enter_aux
+    call cin_string
+
     jmp MENU
 SUB32:
     jmp MENU
 MUL32:
+    call mul32            ; EAX <- resultado
+
+    push result_buffer    ; buffer onde será escrita a string
+    push eax              ; número a converter
+    call num2ascii        ; EAX=ponteiro da string, ECX=tamanho
+
+    push ecx              ; tamanho
+    push eax              ; endereço da string
+    call cout
+    push enter_aux
+    call cin_string
+
     jmp MENU
 DIV32:
     jmp MENU
 EXP32:
+    call exp32          ; EAX <- resultado
+
+    push result_buffer    ; buffer onde será escrita a string
+    push eax              ; número a converter
+    call num2ascii        ; EAX=ponteiro da string, ECX=tamanho
+
+    push ecx              ; tamanho
+    push eax              ; endereço da string
+    call cout
+    push enter_aux
+    call cin_string
+
     jmp MENU
 MOD32:
     jmp MENU
@@ -480,6 +516,199 @@ exp16:
 ; AX = resultado
 ;---------------------------------------------------------
 ;mod16:
+
+;>>>>>>FUNCOES 32 BITS<<<<<<
+;---------------------------------------------------------
+; add32
+;
+; Retorno:
+; EAX = resultado
+;---------------------------------------------------------
+
+add32:
+
+    push ebp
+    mov ebp,esp
+
+    sub esp,8
+
+    ; primeiro número
+
+    push len_msgNum1
+    push msgNum1
+    call cout
+
+    lea eax,[ebp-4]
+    push eax
+    call cin_number32
+
+    ; segundo número
+
+    push len_msgNum2
+    push msgNum2
+    call cout
+
+    lea eax,[ebp-8]
+    push eax
+    call cin_number32
+
+    ; soma
+
+    mov eax,[ebp-4]
+
+    add eax,[ebp-8]
+
+    mov esp,ebp
+    pop ebp
+    ret
+
+;---------------------------------------------------------
+; sub32
+;
+; Retorno:
+; AX = resultado
+;---------------------------------------------------------
+;sub32:
+
+;---------------------------------------------------------
+; mul32
+;
+; Retorno:
+; EAX = resultado
+;---------------------------------------------------------
+
+mul32:
+    push ebp
+    mov ebp,esp
+
+    sub esp,8
+
+    ; primeiro número
+
+    push len_msgNum1
+    push msgNum1
+    call cout
+
+    lea eax,[ebp-4]
+    push eax
+    call cin_number32
+
+    ; segundo número
+
+    push len_msgNum2
+    push msgNum2
+    call cout
+
+    lea eax,[ebp-8]
+    push eax
+    call cin_number32
+
+    ; multiplicacao
+
+    mov eax,[ebp-4]
+
+    imul eax,[ebp-8]
+
+    jo .overflow
+
+    mov esp,ebp
+    pop ebp
+    ret
+
+.overflow:
+
+    push len_msgOverflow
+    push msgOverflow
+    call cout
+
+    jmp SAIR
+
+;---------------------------------------------------------
+; div32
+;
+; Retorno:
+; EAX = resultado
+;---------------------------------------------------------
+;div32:
+
+;---------------------------------------------------------
+; exp32
+;
+; Retorno:
+; EAX = resultado
+;---------------------------------------------------------
+exp32:
+
+    push ebp
+    mov ebp,esp
+
+    sub esp,8
+
+    ; base
+
+    push len_msgNum1
+    push msgNum1
+    call cout
+
+    lea eax,[ebp-4]
+    push eax
+    call cin_number32
+
+    ; expoente
+
+    push len_msgNum2
+    push msgNum2
+    call cout
+
+    lea eax,[ebp-8]
+    push eax
+    call cin_number32
+
+    mov ebx,[ebp-4]
+    movsx edx,word [ebp-8]
+    mov eax,1
+
+    cmp edx,0
+    je .fim
+
+.loop:
+
+    cmp edx,0
+    je .fim
+
+    imul eax,ebx
+    jo .overflow
+
+    dec edx
+    jmp .loop
+
+.fim:
+
+    mov esp,ebp
+    pop ebp
+    ret
+
+.overflow:
+
+    push len_msgOverflow
+    push msgOverflow
+    call cout
+    jmp SAIR
+
+.erro:
+
+    push len_msgFaixa
+    push msgFaixa
+    call cout
+    jmp SAIR
+
+;---------------------------------------------------------
+; mod32
+;
+; Retorno:
+; EAX = resultado
+;---------------------------------------------------------
+;mod32:
 
 cout:
 
