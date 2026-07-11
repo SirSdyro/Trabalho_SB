@@ -65,7 +65,7 @@ section .bss
 
     result_buffer   resb 16
 
-    enter_aux   resb 2
+    schmidley   resb 2
 
 section .text
     global _start
@@ -200,7 +200,7 @@ ADD16:
     push ecx              ; tamanho
     push eax              ; endereço da string
     call cout
-    push enter_aux
+    push schmidley
     call cin_string
 
     jmp MENU
@@ -218,7 +218,7 @@ MUL16:
     push ecx              ; tamanho
     push eax              ; endereço da string
     call cout
-    push enter_aux
+    push schmidley
     call cin_string
 
     jmp MENU
@@ -236,7 +236,7 @@ EXP16:
     push ecx              ; tamanho
     push eax              ; endereço da string
     call cout
-    push enter_aux
+    push schmidley
     call cin_string
 
     jmp MENU
@@ -270,7 +270,7 @@ ADD32:
     push ecx              ; tamanho
     push eax              ; endereço da string
     call cout
-    push enter_aux
+    push schmidley
     call cin_string
 
     jmp MENU
@@ -286,7 +286,7 @@ MUL32:
     push ecx              ; tamanho
     push eax              ; endereço da string
     call cout
-    push enter_aux
+    push schmidley
     call cin_string
 
     jmp MENU
@@ -302,7 +302,7 @@ EXP32:
     push ecx              ; tamanho
     push eax              ; endereço da string
     call cout
-    push enter_aux
+    push schmidley
     call cin_string
 
     jmp MENU
