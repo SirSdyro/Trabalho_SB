@@ -53,6 +53,9 @@ section .data
     msgFaixa db 'ERRO: Numero fora da faixa.',0xa
     len_msgFaixa equ $-msgFaixa
 
+    msgDivZero db 'ERRO: Divisao por zero.',0xa
+    len_msgDivZero equ $-msgDivZero
+
 section .bss
 
     username        resb 32
@@ -83,7 +86,7 @@ _start:
     push hello1
     call cout
 
-    push [len_username]
+    push dword [len_username]
     push username
     call cout
 
@@ -205,6 +208,20 @@ ADD16:
 
     jmp MENU
 SUB16:
+    call sub16             ; AX <- resultado
+
+    movsx eax, ax           ; estende o resultado de 16 para 32 bits
+
+    push result_buffer      ; buffer onde será escrita a string
+    push eax                ; número a converter
+    call num2ascii          ; EAX=ponteiro da string, EDX=tamanho
+
+    push edx                ; tamanho
+    push eax                ; endereço da string
+    call cout
+    push schmidley
+    call cin_string
+
     jmp MENU
 MUL16:
     call mul16            ; AX <- resultado
@@ -223,6 +240,20 @@ MUL16:
 
     jmp MENU
 DIV16:
+    call div16              ; AX <- resultado (quociente)
+
+    movsx eax, ax           ; estende o resultado de 16 para 32 bits
+
+    push result_buffer      ; buffer onde será escrita a string
+    push eax                ; número a converter
+    call num2ascii          ; EAX=ponteiro da string, EDX=tamanho
+
+    push edx                ; tamanho
+    push eax                ; endereço da string
+    call cout
+    push schmidley
+    call cin_string
+
     jmp MENU
 EXP16:
     call exp16          ; AX <- resultado
@@ -241,6 +272,20 @@ EXP16:
 
     jmp MENU
 MOD16:
+    call mod16              ; AX <- resultado (resto)
+
+    movsx eax, ax           ; estende o resultado de 16 para 32 bits
+
+    push result_buffer      ; buffer onde será escrita a string
+    push eax                ; número a converter
+    call num2ascii          ; EAX=ponteiro da string, EDX=tamanho
+
+    push edx                ; tamanho
+    push eax                ; endereço da string
+    call cout
+    push schmidley
+    call cin_string
+
     jmp MENU
 
 ;///32 bits///
@@ -275,6 +320,18 @@ ADD32:
 
     jmp MENU
 SUB32:
+    call sub32              ; EAX <- resultado
+
+    push result_buffer      ; buffer onde será escrita a string
+    push eax                ; número a converter
+    call num2ascii          ; EAX=ponteiro da string, EDX=tamanho
+
+    push edx                ; tamanho
+    push eax                ; endereço da string
+    call cout
+    push schmidley
+    call cin_string
+
     jmp MENU
 MUL32:
     call mul32            ; EAX <- resultado
@@ -291,6 +348,18 @@ MUL32:
 
     jmp MENU
 DIV32:
+    call div32              ; EAX <- resultado (quociente)
+
+    push result_buffer      ; buffer onde será escrita a string
+    push eax                ; número a converter
+    call num2ascii          ; EAX=ponteiro da string, EDX=tamanho
+
+    push edx                ; tamanho
+    push eax                ; endereço da string
+    call cout
+    push schmidley
+    call cin_string
+
     jmp MENU
 EXP32:
     call exp32          ; EAX <- resultado
@@ -307,6 +376,18 @@ EXP32:
 
     jmp MENU
 MOD32:
+    call mod32              ; EAX <- resultado (resto)
+
+    push result_buffer      ; buffer onde será escrita a string
+    push eax                ; número a converter
+    call num2ascii          ; EAX=ponteiro da string, EDX=tamanho
+
+    push edx                ; tamanho
+    push eax                ; endereço da string
+    call cout
+    push schmidley
+    call cin_string
+
     jmp MENU
 
     push len_welcome
@@ -372,7 +453,43 @@ add16:
 ; Retorno:
 ; AX = resultado
 ;---------------------------------------------------------
-;sub16:
+
+sub16:
+
+    push ebp
+    mov ebp,esp
+
+    sub esp,8
+
+    ; primeiro número
+
+    push len_msgNum1
+    push msgNum1
+    call cout
+
+    lea eax,[ebp-4]
+    push eax
+    call cin_number16
+
+    ; segundo número
+
+    push len_msgNum2
+    push msgNum2
+    call cout
+
+    lea eax,[ebp-8]
+    push eax
+    call cin_number16
+
+    ; subtracao
+
+    mov ax,[ebp-4]
+
+    sub ax,[ebp-8]
+
+    mov esp,ebp
+    pop ebp
+    ret
 
 ;---------------------------------------------------------
 ; mul16
@@ -431,9 +548,58 @@ mul16:
 ; div16
 ;
 ; Retorno:
-; AX = resultado
+; AX = resultado (quociente)
 ;---------------------------------------------------------
-;div16:
+
+div16:
+
+    push ebp
+    mov ebp,esp
+
+    sub esp,8
+
+    ; dividendo
+
+    push len_msgNum1
+    push msgNum1
+    call cout
+
+    lea eax,[ebp-4]
+    push eax
+    call cin_number16
+
+    ; divisor
+
+    push len_msgNum2
+    push msgNum2
+    call cout
+
+    lea eax,[ebp-8]
+    push eax
+    call cin_number16
+
+    ; verifica divisao por zero
+
+    cmp word [ebp-8],0
+    je .divzero
+
+    ; divisao
+
+    mov ax,[ebp-4]
+    cwd                    ; estende sinal de AX para DX:AX
+    idiv word [ebp-8]      ; AX = quociente, DX = resto
+
+    mov esp,ebp
+    pop ebp
+    ret
+
+.divzero:
+
+    push len_msgDivZero
+    push msgDivZero
+    call cout
+
+    jmp SAIR
 
 ;---------------------------------------------------------
 ; exp16
@@ -510,9 +676,60 @@ exp16:
 ; mod16
 ;
 ; Retorno:
-; AX = resultado
+; AX = resultado (resto)
 ;---------------------------------------------------------
-;mod16:
+
+mod16:
+
+    push ebp
+    mov ebp,esp
+
+    sub esp,8
+
+    ; dividendo
+
+    push len_msgNum1
+    push msgNum1
+    call cout
+
+    lea eax,[ebp-4]
+    push eax
+    call cin_number16
+
+    ; divisor
+
+    push len_msgNum2
+    push msgNum2
+    call cout
+
+    lea eax,[ebp-8]
+    push eax
+    call cin_number16
+
+    ; verifica divisao por zero
+
+    cmp word [ebp-8],0
+    je .divzero
+
+    ; divisao
+
+    mov ax,[ebp-4]
+    cwd                    ; estende sinal de AX para DX:AX
+    idiv word [ebp-8]      ; AX = quociente, DX = resto
+
+    mov ax,dx              ; retorna o resto
+
+    mov esp,ebp
+    pop ebp
+    ret
+
+.divzero:
+
+    push len_msgDivZero
+    push msgDivZero
+    call cout
+
+    jmp SAIR
 
 ;>>>>>>>>>>>>FUNCOES 32 BITS<<<<<<<<<<<<
 ;---------------------------------------------------------
@@ -565,7 +782,43 @@ add32:
 ; Retorno:
 ; EAX = resultado
 ;---------------------------------------------------------
-;sub32:
+
+sub32:
+
+    push ebp
+    mov ebp,esp
+
+    sub esp,8
+
+    ; primeiro número
+
+    push len_msgNum1
+    push msgNum1
+    call cout
+
+    lea eax,[ebp-4]
+    push eax
+    call cin_number32
+
+    ; segundo número
+
+    push len_msgNum2
+    push msgNum2
+    call cout
+
+    lea eax,[ebp-8]
+    push eax
+    call cin_number32
+
+    ; subtracao
+
+    mov eax,[ebp-4]
+
+    sub eax,[ebp-8]
+
+    mov esp,ebp
+    pop ebp
+    ret
 
 ;---------------------------------------------------------
 ; mul32
@@ -624,9 +877,58 @@ mul32:
 ; div32
 ;
 ; Retorno:
-; EAX = resultado
+; EAX = resultado (quociente)
 ;---------------------------------------------------------
-;div32:
+
+div32:
+
+    push ebp
+    mov ebp,esp
+
+    sub esp,8
+
+    ; dividendo
+
+    push len_msgNum1
+    push msgNum1
+    call cout
+
+    lea eax,[ebp-4]
+    push eax
+    call cin_number32
+
+    ; divisor
+
+    push len_msgNum2
+    push msgNum2
+    call cout
+
+    lea eax,[ebp-8]
+    push eax
+    call cin_number32
+
+    ; verifica divisao por zero
+
+    cmp dword [ebp-8],0
+    je .divzero
+
+    ; divisao
+
+    mov eax,[ebp-4]
+    cdq                     ; estende sinal de EAX para EDX:EAX
+    idiv dword [ebp-8]      ; EAX = quociente, EDX = resto
+
+    mov esp,ebp
+    pop ebp
+    ret
+
+.divzero:
+
+    push len_msgDivZero
+    push msgDivZero
+    call cout
+
+    jmp SAIR
 
 ;---------------------------------------------------------
 ; exp32
@@ -703,9 +1005,60 @@ exp32:
 ; mod32
 ;
 ; Retorno:
-; EAX = resultado
+; EAX = resultado (resto)
 ;---------------------------------------------------------
-;mod32:
+
+mod32:
+
+    push ebp
+    mov ebp,esp
+
+    sub esp,8
+
+    ; dividendo
+
+    push len_msgNum1
+    push msgNum1
+    call cout
+
+    lea eax,[ebp-4]
+    push eax
+    call cin_number32
+
+    ; divisor
+
+    push len_msgNum2
+    push msgNum2
+    call cout
+
+    lea eax,[ebp-8]
+    push eax
+    call cin_number32
+
+    ; verifica divisao por zero
+
+    cmp dword [ebp-8],0
+    je .divzero
+
+    ; divisao
+
+    mov eax,[ebp-4]
+    cdq                     ; estende sinal de EAX para EDX:EAX
+    idiv dword [ebp-8]      ; EAX = quociente, EDX = resto
+
+    mov eax,edx             ; retorna o resto
+
+    mov esp,ebp
+    pop ebp
+    ret
+
+.divzero:
+
+    push len_msgDivZero
+    push msgDivZero
+    call cout
+
+    jmp SAIR
 
 cout:
 
@@ -972,8 +1325,6 @@ num2ascii:
     mov edx,[ebp+12]
     add edx,15
     sub edx,eax
-
-    dec edx
 
     pop ebp
     ret 8
