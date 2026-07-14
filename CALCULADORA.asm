@@ -2,6 +2,13 @@
 ; nasm -f elf32 CALCULADORA.asm -o test.Ola
 ; ld -m elf_i386 test.o -o test
 ; ./test
+%include 'ADD.asm'
+%include 'SUB.asm'
+%include 'MUL.asm'
+%include 'DIV.asm'
+%include 'EXP.asm'
+%include 'MOD.asm'
+%include 'IO.asm'
 
 section .data
 
@@ -14,7 +21,7 @@ section .data
     hello2 db ', bem-vindo ao programa CALC IA-32',0xa
     len_hello2 equ $-hello2
 
-    precisionMsg db 'Precisao (0=16 bits / 1=32 bits): ',0xa
+    precisionMsg db 'Vai trabalhar com 16 ou 32 bits (digite 0 para 16, e 1 para 32):',0xa
     len_precisionMsg equ $-precisionMsg
 
     menu0 db 0xa,'ESCOLHA UMA OPCAO',0xa
@@ -47,7 +54,7 @@ section .data
     msgNum2 db 'Segundo numero: '
     len_msgNum2 equ $-msgNum2
 
-    msgOverflow db 'ERRO: Overflow!',0xa
+    msgOverflow db 'OCORREU OVERFLOW',0xa
     len_msgOverflow equ $-msgOverflow
 
     msgFaixa db 'ERRO: Numero fora da faixa.',0xa
@@ -68,11 +75,48 @@ section .bss
 
     result_buffer   resb 16
 
-    schmidley   resb 2
+    schmidley   resb 32
 
 section .text
     global _start
 
+    global msgNum1
+    global len_msgNum1
+
+    global msgNum2
+    global len_msgNum2
+
+    global msgOverflow
+    global msgFaixa
+    global msgDivZero
+
+    global input_buffer
+    global result_buffer
+
+    extern add16
+    extern add32
+
+    extern sub16
+    extern sub32
+
+    extern mul16
+    extern mul32
+
+    extern div16
+    extern div32
+
+    extern exp16
+    extern exp32
+
+    extern mod16
+    extern mod32
+
+    extern cout
+    extern cin_string
+    extern cin_number16
+    extern cin_number32
+    extern ascii_to_int
+    extern num2ascii
 _start:
 
     push len_welcome
@@ -192,9 +236,7 @@ MENU32:
     jmp MENU
 
 ADD16:
-    call add16            ; AX <- resultado
-
-    movsx eax, ax         ; estende o resultado de 16 para 32 bits
+    call add16            ; EAX <- resultado
 
     push result_buffer    ; buffer onde será escrita a string
     push eax              ; número a converter
@@ -208,9 +250,7 @@ ADD16:
 
     jmp MENU
 SUB16:
-    call sub16             ; AX <- resultado
-
-    movsx eax, ax           ; estende o resultado de 16 para 32 bits
+    call sub16             ; EAX <- resultado
 
     push result_buffer      ; buffer onde será escrita a string
     push eax                ; número a converter
@@ -224,9 +264,7 @@ SUB16:
 
     jmp MENU
 MUL16:
-    call mul16            ; AX <- resultado
-
-    movsx eax, ax         ; estende o resultado de 16 para 32 bits
+    call mul16            ; EAX <- resultado
 
     push result_buffer    ; buffer onde será escrita a string
     push eax              ; número a converter
@@ -240,9 +278,7 @@ MUL16:
 
     jmp MENU
 DIV16:
-    call div16              ; AX <- resultado (quociente)
-
-    movsx eax, ax           ; estende o resultado de 16 para 32 bits
+    call div16              ; EAX <- resultado (quociente)
 
     push result_buffer      ; buffer onde será escrita a string
     push eax                ; número a converter
@@ -256,9 +292,7 @@ DIV16:
 
     jmp MENU
 EXP16:
-    call exp16          ; AX <- resultado
-
-    movsx eax, ax         ; estende o resultado de 16 para 32 bits
+    call exp16          ; EAX <- resultado
 
     push result_buffer    ; buffer onde será escrita a string
     push eax              ; número a converter
@@ -272,9 +306,7 @@ EXP16:
 
     jmp MENU
 MOD16:
-    call mod16              ; AX <- resultado (resto)
-
-    movsx eax, ax           ; estende o resultado de 16 para 32 bits
+    call mod16              ; EAX <- resultado (resto)
 
     push result_buffer      ; buffer onde será escrita a string
     push eax                ; número a converter
@@ -306,7 +338,7 @@ BITS_32:
     je SAIR
 
 ADD32:
-    call add32            ; EAX <- resultado
+    call add32            ; EEAX <- resultado
 
     push result_buffer    ; buffer onde será escrita a string
     push eax              ; número a converter
@@ -320,7 +352,7 @@ ADD32:
 
     jmp MENU
 SUB32:
-    call sub32              ; EAX <- resultado
+    call sub32              ; EEAX <- resultado
 
     push result_buffer      ; buffer onde será escrita a string
     push eax                ; número a converter
@@ -334,7 +366,7 @@ SUB32:
 
     jmp MENU
 MUL32:
-    call mul32            ; EAX <- resultado
+    call mul32            ; EEAX <- resultado
 
     push result_buffer    ; buffer onde será escrita a string
     push eax              ; número a converter
@@ -348,7 +380,7 @@ MUL32:
 
     jmp MENU
 DIV32:
-    call div32              ; EAX <- resultado (quociente)
+    call div32              ; EEAX <- resultado (quociente)
 
     push result_buffer      ; buffer onde será escrita a string
     push eax                ; número a converter
@@ -362,7 +394,7 @@ DIV32:
 
     jmp MENU
 EXP32:
-    call exp32          ; EAX <- resultado
+    call exp32          ; EEAX <- resultado
 
     push result_buffer    ; buffer onde será escrita a string
     push eax              ; número a converter
@@ -376,7 +408,7 @@ EXP32:
 
     jmp MENU
 MOD32:
-    call mod32              ; EAX <- resultado (resto)
+    call mod32              ; EEAX <- resultado (resto)
 
     push result_buffer      ; buffer onde será escrita a string
     push eax                ; número a converter
@@ -407,7 +439,7 @@ SAIR:
 ; add16
 ;
 ; Retorno:
-; AX = resultado
+; EAX = resultado
 ;---------------------------------------------------------
 
 add16:
@@ -443,6 +475,8 @@ add16:
 
     add ax,[ebp-8]
 
+    movsx eax, ax         ; estende o resultado de 16 para 32 bits
+
     mov esp,ebp
     pop ebp
     ret
@@ -451,7 +485,7 @@ add16:
 ; sub16
 ;
 ; Retorno:
-; AX = resultado
+; EAX = resultado
 ;---------------------------------------------------------
 
 sub16:
@@ -487,6 +521,8 @@ sub16:
 
     sub ax,[ebp-8]
 
+    movsx eax, ax         ; estende o resultado de 16 para 32 bits
+
     mov esp,ebp
     pop ebp
     ret
@@ -495,7 +531,7 @@ sub16:
 ; mul16
 ;
 ; Retorno:
-; AX = resultado
+; EAX = resultado
 ;---------------------------------------------------------
 
 mul16:
@@ -532,6 +568,8 @@ mul16:
 
     jo .overflow
 
+    movsx eax, ax         ; estende o resultado de 16 para 32 bits
+
     mov esp,ebp
     pop ebp
     ret
@@ -548,7 +586,7 @@ mul16:
 ; div16
 ;
 ; Retorno:
-; AX = resultado (quociente)
+; EAX = resultado (quociente)
 ;---------------------------------------------------------
 
 div16:
@@ -589,6 +627,8 @@ div16:
     cwd                    ; estende sinal de AX para DX:AX
     idiv word [ebp-8]      ; AX = quociente, DX = resto
 
+    movsx eax, ax         ; estende o resultado de 16 para 32 bits
+
     mov esp,ebp
     pop ebp
     ret
@@ -605,7 +645,7 @@ div16:
 ; exp16
 ;
 ; Retorno:
-; AX = resultado
+; EAX = resultado
 ;---------------------------------------------------------
 exp16:
 
@@ -638,21 +678,32 @@ exp16:
     movsx edx,word [ebp-8]
     mov ax,1
 
+    ; se expoente < 0, retorna 0
     cmp edx,0
+    jl .negativo
+
+    ; se expoente == 0, retorna 1
     je .fim
 
 .loop:
-
-    cmp edx,0
-    je .fim
 
     imul ax,bx
     jo .overflow
 
     dec edx
-    jmp .loop
+    jnz .loop
 
 .fim:
+
+    movsx eax, ax         ; estende o resultado de 16 para 32 bits
+
+    mov esp,ebp
+    pop ebp
+    ret
+
+.negativo:
+
+    xor ax,ax
 
     mov esp,ebp
     pop ebp
@@ -676,7 +727,7 @@ exp16:
 ; mod16
 ;
 ; Retorno:
-; AX = resultado (resto)
+; EAX = resultado (resto)
 ;---------------------------------------------------------
 
 mod16:
@@ -719,6 +770,8 @@ mod16:
 
     mov ax,dx              ; retorna o resto
 
+    movsx eax, ax         ; estende o resultado de 16 para 32 bits
+
     mov esp,ebp
     pop ebp
     ret
@@ -736,7 +789,7 @@ mod16:
 ; add32
 ;
 ; Retorno:
-; EAX = resultado
+; EEAX = resultado
 ;---------------------------------------------------------
 
 add32:
@@ -780,7 +833,7 @@ add32:
 ; sub32
 ;
 ; Retorno:
-; EAX = resultado
+; EEAX = resultado
 ;---------------------------------------------------------
 
 sub32:
@@ -824,7 +877,7 @@ sub32:
 ; mul32
 ;
 ; Retorno:
-; EAX = resultado
+; EEAX = resultado
 ;---------------------------------------------------------
 
 mul32:
@@ -877,7 +930,7 @@ mul32:
 ; div32
 ;
 ; Retorno:
-; EAX = resultado (quociente)
+; EEAX = resultado (quociente)
 ;---------------------------------------------------------
 
 div32:
@@ -934,7 +987,7 @@ div32:
 ; exp32
 ;
 ; Retorno:
-; EAX = resultado
+; EEAX = resultado
 ;---------------------------------------------------------
 exp32:
 
@@ -964,24 +1017,33 @@ exp32:
     call cin_number32
 
     mov ebx,[ebp-4]
-    movsx edx,word [ebp-8]
+    mov edx,[ebp-8]
     mov eax,1
 
+    ; se expoente < 0, retorna 0
     cmp edx,0
+    jl .negativo
+
+    ; se expoente == 0, retorna 1
     je .fim
 
 .loop:
-
-    cmp edx,0
-    je .fim
 
     imul eax,ebx
     jo .overflow
 
     dec edx
-    jmp .loop
+    jnz .loop
 
 .fim:
+
+    mov esp,ebp
+    pop ebp
+    ret
+
+.negativo:
+
+    xor eax,eax
 
     mov esp,ebp
     pop ebp
@@ -1005,7 +1067,7 @@ exp32:
 ; mod32
 ;
 ; Retorno:
-; EAX = resultado (resto)
+; EEAX = resultado (resto)
 ;---------------------------------------------------------
 
 mod32:
